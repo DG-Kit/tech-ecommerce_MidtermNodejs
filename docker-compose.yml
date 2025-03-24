@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: tech-ecommerce-db
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "Kietanh1234!"  # More complex password with uppercase, number, and special character
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pidof sqlservr || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy  # Wait for db to be healthy before starting
+    environment:
+      DB_HOST: tech-ecommerce-db
+      DB_USER: sa
+      DB_PASSWORD: "Kietanh1234!"  # Match the updated password
+      DB_NAME: TechStore
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
